@@ -39,6 +39,7 @@ import { getCldImageUrl } from "next-cloudinary";
 import { addImage, updateImage } from "@/lib/actions/image.actions";
 import { useRouter } from "next/navigation";
 import { InsufficientCreditsModal } from "./InsufficientCreditsModal";
+import { useToast } from "@/components/ui/use-toast";
 
 export const formSchema = z.object({
   title: z.string(),
@@ -57,6 +58,7 @@ const TransformationForm = ({
   config = null,
 }: TransformationFormProps) => {
   const transformationType = transformationTypes[type];
+  const { toast } = useToast();
   const [image, setImage] = useState(data);
   const [newTransformation, setNewTransformation] =
     useState<Transformations | null>(null);
@@ -66,6 +68,7 @@ const TransformationForm = ({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [version2Image, setVersion2Image] = useState<any>(null);
 
   const initialValues =
     data && action === "Update"
@@ -86,6 +89,13 @@ const TransformationForm = ({
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // toast({
+    //   title: "Waring",
+    //   description: "Sorry,we are currently developing",
+    //   duration: 5000,
+    //   className: "warn-toast",
+    // });
+    // return;
     setIsSubmitting(true);
 
     if (data || image) {
@@ -109,6 +119,17 @@ const TransformationForm = ({
         prompt: values.prompt,
         color: values.color,
       };
+
+      // const imageVersion2Data = {
+      //   title: values.title,
+      //   publicId: version2Image?.publicId,
+      //   transformationType: type,
+      //   width: version2Image?.width,
+      //   height: version2Image?.height,
+      //   secureURL: version2Image?.secureURL,
+      //   prompt: "",
+      //   color: "",
+      // };
 
       if (action === "Add") {
         try {
@@ -326,6 +347,9 @@ const TransformationForm = ({
             transformationConfig={transformationConfig}
             newTransformation={newTransformation}
             setTransformationConfig={setTransformationConfig}
+            userId={userId}
+            setVersion2Image={setVersion2Image}
+            version2Image={version2Image}
           />
         </div>
 

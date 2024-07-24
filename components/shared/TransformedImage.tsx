@@ -20,6 +20,8 @@ const TransformedImage = ({
   setImage,
   newTransformation,
   setTransformationConfig,
+  setVersion2Image,
+  version2Image,
 }: TransformedImageProps) => {
   const downloadHandler = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -36,6 +38,8 @@ const TransformedImage = ({
     );
   };
 
+  const [isUsingVersion2, setIsUsingVersion2] = useState(false);
+
   const imageBgRemoveVersion2 = async () => {
     const form = new FormData();
     form.append("url", uploadedImageUrl);
@@ -48,6 +52,7 @@ const TransformedImage = ({
         },
       }
     );
+    console.log(response);
     const imgBase64 = response.data.results[0].entities[0].image;
     const formData = new FormData();
     formData.append("file", `data:image/jpeg;base64,${imgBase64}`);
@@ -82,10 +87,11 @@ const TransformedImage = ({
 
   const imageProcessWithVersion2 = async () => {
     try {
-      setTransformationConfig(
-        deepMergeObjects(newTransformation, transformationConfig)
-      );
-      if (type === "remove") {
+      // setTransformationConfig(
+      //   deepMergeObjects(newTransformation, transformationConfig)
+      // );
+      setIsUsingVersion2(true);
+      if (type === "removeBackground") {
         imageBgRemoveVersion2();
       } else if (type == "restore") {
         imageRestoringVersion2();
@@ -122,7 +128,7 @@ const TransformedImage = ({
     <div className="flex flex-col gap-4">
       <div className="flex-between">
         <h3 className="h3-bold text-dark-600">Transformed</h3>
-        {type == "remove" || type == "restore" ? (
+        {type == "removeBackground" || type == "restore" ? (
           <button
             onClick={imageProcessWithVersion2}
             disabled={isTransforming || newTransformation === null}
@@ -149,7 +155,7 @@ const TransformedImage = ({
         )}
       </div>
 
-      {image?.publicId && transformationConfig ? (
+      {image?.publicId && (transformationConfig || isUsingVersion2) ? (
         <div className="relative">
           <CldImage
             width={getImageSize(type, image, "width")}

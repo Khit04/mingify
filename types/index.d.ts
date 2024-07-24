@@ -125,6 +125,7 @@ declare type TransformationFormProps = {
   creditBalance: number;
   data?: IImage | null;
   config?: Transformations | null;
+  
 };
 
 declare type TransformedImageProps = {
