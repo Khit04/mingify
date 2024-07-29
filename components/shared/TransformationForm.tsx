@@ -40,7 +40,7 @@ import { addImage, updateImage } from "@/lib/actions/image.actions";
 import { useRouter } from "next/navigation";
 import { InsufficientCreditsModal } from "./InsufficientCreditsModal";
 import { useToast } from "@/components/ui/use-toast";
-
+import axios from "axios";
 export const formSchema = z.object({
   title: z.string(),
   aspectRatio: z.string().optional(),
@@ -67,8 +67,15 @@ const TransformationForm = ({
   const [transformationConfig, setTransformationConfig] = useState(config);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
-  const [version2Image, setVersion2Image] = useState<any>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(
+    data?.secureURL ?? null
+  );
+  const [version2Image, setVersion2Image] = useState<any>(
+    image?.version2Image ?? null
+  );
+  const [currentVersion, setCurrentVersion] = useState(
+    image?.version2Image ? "version2" : null
+  );
 
   const initialValues =
     data && action === "Update"
@@ -89,13 +96,6 @@ const TransformationForm = ({
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // toast({
-    //   title: "Waring",
-    //   description: "Sorry,we are currently developing",
-    //   duration: 5000,
-    //   className: "warn-toast",
-    // });
-    // return;
     setIsSubmitting(true);
 
     if (data || image) {
@@ -105,7 +105,6 @@ const TransformationForm = ({
         src: image?.publicId,
         ...transformationConfig,
       });
-
       const imageData = {
         title: values.title,
         publicId: image?.publicId,
@@ -120,16 +119,20 @@ const TransformationForm = ({
         color: values.color,
       };
 
-      // const imageVersion2Data = {
-      //   title: values.title,
-      //   publicId: version2Image?.publicId,
-      //   transformationType: type,
-      //   width: version2Image?.width,
-      //   height: version2Image?.height,
-      //   secureURL: version2Image?.secureURL,
-      //   prompt: "",
-      //   color: "",
-      // };
+      if (currentVersion === "version2") {
+        imageData.version2Image = {
+          title: values.title,
+          publicId: version2Image?.publicId,
+          transformationType: type,
+          width: version2Image?.width,
+          height: version2Image?.height,
+          secureURL: version2Image?.secureURL,
+          transformationURL: transformationUrl,
+          aspectRatio: values.aspectRatio,
+        };
+      } else {
+        imageData.version2Image = null;
+      }
 
       if (action === "Add") {
         try {
@@ -211,6 +214,7 @@ const TransformationForm = ({
 
   const onTransformHandler = async () => {
     setIsTransforming(true);
+    setCurrentVersion("version1");
 
     setTransformationConfig(
       deepMergeObjects(newTransformation, transformationConfig)
@@ -228,6 +232,89 @@ const TransformationForm = ({
       setNewTransformation(transformationType.config);
     }
   }, [image, transformationType.config, type]);
+
+  const imageBgRemoveVersion2 = async () => {
+    const form = new FormData();
+    form.append("url", uploadedImageUrl);
+    const response = await axios.post(
+      "https://background-removal4.p.rapidapi.com/v1/results",
+      form,
+      {
+        headers: {
+          "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY,
+        },
+      }
+    );
+    const imgBase64 = response.data.results[0].entities[0].image;
+    const formData = new FormData();
+    formData.append("file", `data:image/jpeg;base64,${imgBase64}`);
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
+    imageUploadToCloudinary(formData);
+  };
+
+  const imageRestoringVersion2 = async () => {
+    const res = await axios.post(
+      "https://api.claid.ai/v1-beta1/image/edit",
+      {
+        input: uploadedImageUrl,
+        operations: {
+          restorations: {
+            upscale: "smart_enhance",
+          },
+        },
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + "528488628ac14de99f296cccc03116e1",
+        },
+      }
+    );
+    const file = res.data.data.output.tmp_url;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
+    imageUploadToCloudinary(formData);
+  };
+
+  const imageProcessWithVersion2 = async () => {
+    try {
+      setIsTransforming(true);
+      setCurrentVersion("version2");
+      if (type === "removeBackground") {
+        imageBgRemoveVersion2();
+      } else if (type == "restore") {
+        imageRestoringVersion2();
+      }
+    } catch (error) {
+      console.log(error);
+      //   response.status(500).json({ message: "Error processing image", error });
+    }
+  };
+
+  const imageUploadToCloudinary = async (formData: Object) => {
+    try {
+      const res = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      setVersion2Image((prevState: any) => ({
+        ...prevState,
+        publicId: res?.data?.public_id,
+        width: res?.data?.width,
+        height: res?.data?.height,
+        secureURL: res?.data?.secure_url,
+      }));
+      setIsTransforming(false);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -345,11 +432,10 @@ const TransformationForm = ({
             isTransforming={isTransforming}
             setIsTransforming={setIsTransforming}
             transformationConfig={transformationConfig}
-            newTransformation={newTransformation}
-            setTransformationConfig={setTransformationConfig}
-            userId={userId}
             setVersion2Image={setVersion2Image}
             version2Image={version2Image}
+            currentVersion={currentVersion}
+            setCurrentVersion={setCurrentVersion}
           />
         </div>
 
@@ -360,7 +446,19 @@ const TransformationForm = ({
             disabled={isTransforming || newTransformation === null}
             onClick={onTransformHandler}
           >
-            {isTransforming ? "Transforming..." : "Apply Transformation"}
+            {isTransforming && currentVersion === "version1"
+              ? "Transforming..."
+              : " Apply Transformation with Version 1"}
+          </Button>
+          <Button
+            type="button"
+            className="submit-button capitalize"
+            disabled={isTransforming || version2Image !== null}
+            onClick={imageProcessWithVersion2}
+          >
+            {isTransforming && currentVersion === "version2"
+              ? "Transforming..."
+              : "Apply Transformation With Version 2"}
           </Button>
           <Button
             type="submit"

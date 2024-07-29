@@ -31,6 +31,7 @@ declare type AddImageParams = {
     aspectRatio: string | undefined;
     prompt: string | undefined;
     color: string | undefined;
+    version2Image : any
   };
   userId: string;
   path: string;
@@ -136,6 +137,4 @@ declare type TransformedImageProps = {
   isTransforming: boolean;
   hasDownload?: boolean;
   setIsTransforming?: React.Dispatch<React.SetStateAction<boolean>>;
-  uploadedImageUrl: string | null;
-  setImage: any;
 };

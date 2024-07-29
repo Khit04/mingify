@@ -1,4 +1,5 @@
 import mongoose, { Mongoose } from "mongoose";
+import User from "./models/user.model";
 
 const MONGODB_URL = process.env.MONGODB_URL;
 

@@ -4,9 +4,8 @@ import { dataUrl, debounce, download, getImageSize } from "@/lib/utils";
 import { CldImage, getCldImageUrl } from "next-cloudinary";
 import { PlaceholderValue } from "next/dist/shared/lib/get-img-props";
 import Image from "next/image";
-import React, { useState } from "react";
+import React from "react";
 import axios from "axios";
-import { deepMergeObjects } from "@/lib/utils";
 
 const TransformedImage = ({
   image,
@@ -16,130 +15,73 @@ const TransformedImage = ({
   isTransforming,
   setIsTransforming,
   hasDownload = true,
-  uploadedImageUrl = null,
-  setImage,
-  newTransformation,
-  setTransformationConfig,
-  setVersion2Image,
   version2Image,
+  currentVersion,
+  setCurrentVersion,
+  action = null,
 }: TransformedImageProps) => {
   const downloadHandler = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.preventDefault();
     download(
-      getCldImageUrl({
-        width: image?.width,
-        height: image?.height,
-        src: image?.publicId,
-        ...transformationConfig,
-      }),
+      version2Image !== null
+        ? getCldImageUrl({
+            width: version2Image?.width,
+            height: version2Image?.height,
+            src: version2Image?.publicId,
+          })
+        : getCldImageUrl({
+            width: image?.width,
+            height: image?.height,
+            src: image?.publicId,
+            ...transformationConfig,
+          }),
       title
     );
   };
 
-  const [isUsingVersion2, setIsUsingVersion2] = useState(false);
-
-  const imageBgRemoveVersion2 = async () => {
-    const form = new FormData();
-    form.append("url", uploadedImageUrl);
-    const response = await axios.post(
-      "https://background-removal4.p.rapidapi.com/v1/results",
-      form,
-      {
-        headers: {
-          "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY,
-        },
-      }
-    );
-    console.log(response);
-    const imgBase64 = response.data.results[0].entities[0].image;
-    const formData = new FormData();
-    formData.append("file", `data:image/jpeg;base64,${imgBase64}`);
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
-    imageUploadToCloudinary(formData);
-  };
-
-  const imageRestoringVersion2 = async () => {
-    const res = await axios.post(
-      "https://api.claid.ai/v1-beta1/image/edit",
-      {
-        input: uploadedImageUrl,
-        operations: {
-          restorations: {
-            upscale: "smart_enhance",
-          },
-        },
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + "b94d214bf9c247f5ae0aabccde7d2d75",
-        },
-      }
-    );
-    const file = res.data.data.output.tmp_url;
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
-    imageUploadToCloudinary(formData);
-  };
-
-  const imageProcessWithVersion2 = async () => {
-    try {
-      // setTransformationConfig(
-      //   deepMergeObjects(newTransformation, transformationConfig)
-      // );
-      setIsUsingVersion2(true);
-      if (type === "removeBackground") {
-        imageBgRemoveVersion2();
-      } else if (type == "restore") {
-        imageRestoringVersion2();
-      }
-    } catch (error) {
-      console.log(error);
-      //   response.status(500).json({ message: "Error processing image", error });
-    }
-  };
-
-  const imageUploadToCloudinary = async (formData: Object) => {
-    try {
-      const res = await axios.post(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      setImage((prevState: any) => ({
-        ...prevState,
-        publicId: res?.data?.public_id,
-        width: res?.data?.width,
-        height: res?.data?.height,
-        secureURL: res?.data?.secure_url,
-      }));
-    } catch (e) {
-      console.log(e);
-    }
-  };
   return (
     <div className="flex flex-col gap-4">
       <div className="flex-between">
         <h3 className="h3-bold text-dark-600">Transformed</h3>
-        {type == "removeBackground" || type == "restore" ? (
-          <button
-            onClick={imageProcessWithVersion2}
-            disabled={isTransforming || newTransformation === null}
-            className={`bg-primary py-3 px-5 font-medium text-white rounded-md ${
-              isTransforming || newTransformation === null
-                ? "cursor-not-allowed"
-                : ""
-            }`}
-          >
-            Version 2
-          </button>
+        {action !== "update" ? (
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCurrentVersion("version1")}
+              type="button"
+              disabled={transformationConfig == null}
+              className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
+                transformationConfig === null
+                  ? "cursor-not-allowed opacity-40"
+                  : "opacity-100"
+              } ${
+                currentVersion === "version1"
+                  ? "border-blue-400"
+                  : "border-transparent"
+              }`}
+            >
+              Version 1
+            </button>
+            {type == "removeBackground" || type == "restore" ? (
+              <button
+                type="button"
+                onClick={() => setCurrentVersion("version2")}
+                disabled={version2Image == null}
+                className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
+                  version2Image == null
+                    ? "cursor-not-allowed opacity-40"
+                    : "opacity-100"
+                } ${
+                  currentVersion === "version2"
+                    ? "border-blue-400"
+                    : "border-transparent"
+                }`}
+              >
+                Version 2
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {hasDownload && (
@@ -155,26 +97,46 @@ const TransformedImage = ({
         )}
       </div>
 
-      {image?.publicId && (transformationConfig || isUsingVersion2) ? (
+      {!!(image?.publicId || version2Image?.publicId) &&
+      (transformationConfig ||
+        currentVersion === "version2" ||
+        (image?.prompt === "" && action == "update")) ? (
         <div className="relative">
-          <CldImage
-            width={getImageSize(type, image, "width")}
-            height={getImageSize(type, image, "height")}
-            src={image?.publicId}
-            alt={image.title}
-            sizes={"(max-width: 767px) 100vw, 50vw"}
-            placeholder={dataUrl as PlaceholderValue}
-            className="transformed-image"
-            onLoad={() => {
-              setIsTransforming && setIsTransforming(false);
-            }}
-            onError={() => {
-              debounce(() => {
+          {currentVersion === "version2" || version2Image !== null ? (
+            <CldImage
+              width={getImageSize(type, version2Image, "width")}
+              height={getImageSize(type, version2Image, "height")}
+              src={version2Image?.publicId}
+              alt={version2Image?.title}
+              sizes={"(max-width: 767px) 100vw, 50vw"}
+              placeholder={dataUrl as PlaceholderValue}
+              className="transformed-image"
+              onError={() => {
+                debounce(() => {
+                  setIsTransforming && setIsTransforming(false);
+                }, 8000)();
+              }}
+            />
+          ) : (
+            <CldImage
+              width={getImageSize(type, image, "width")}
+              height={getImageSize(type, image, "height")}
+              src={image?.publicId}
+              alt={image?.title}
+              sizes={"(max-width: 767px) 100vw, 50vw"}
+              placeholder={dataUrl as PlaceholderValue}
+              className="transformed-image"
+              onLoad={() => {
                 setIsTransforming && setIsTransforming(false);
-              }, 8000)();
-            }}
-            {...transformationConfig}
-          />
+              }}
+              onError={() => {
+                debounce(() => {
+                  setIsTransforming && setIsTransforming(false);
+                }, 8000)();
+              }}
+              {...transformationConfig}
+            />
+          )}
 
           {isTransforming && (
             <div className="transforming-loader">

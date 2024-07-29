@@ -21,6 +21,17 @@ export interface IImage extends Document {
   updatedAt?: Date;
 }
 
+const version2 = {
+  title: { type: String, required: true },
+  transformationUrl: { type: String },
+  transformationType: { type: String, required: true },
+  publicId: { type: String, required: true },
+  secureURL: { type: String, required: true },
+  width: { type: Number },
+  aspectRatio: { type: String },
+  height: { type: Number },
+};
+
 const ImageSchema = new Schema({
   title: { type: String, required: true },
   transformationType: { type: String, required: true },
@@ -36,6 +47,10 @@ const ImageSchema = new Schema({
   author: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  version2Image: {
+    type: version2,
+    required: false,
+  },
 });
 
 const Image = models?.Image || model("Image", ImageSchema);

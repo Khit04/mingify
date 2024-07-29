@@ -14,6 +14,8 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
 
   const image = await getImageById(id);
 
+  console.log(image);
+
   return (
     <>
       <Header title={image.title} />
@@ -73,14 +75,29 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
           </div>
 
           {/* TRANSFORMED IMAGE */}
-          <TransformedImage
-            image={image}
-            type={image.transformationType}
-            title={image.title}
-            isTransforming={false}
-            transformationConfig={image.config}
-            hasDownload={true}
-          />
+          {image.version2Image ? (
+            <TransformedImage
+              image={image}
+              version2Image={image.version2Image}
+              type={image.transformationType}
+              title={image.title}
+              isTransforming={false}
+              transformationConfig={null}
+              hasDownload={true}
+              action={"update"}
+            />
+          ) : (
+            <TransformedImage
+              image={image}
+              type={image.transformationType}
+              version2Image={null}
+              title={image.title}
+              isTransforming={false}
+              transformationConfig={image.config}
+              hasDownload={true}
+              action={"update"}
+            />
+          )}
         </div>
 
         {userId === image.author.clerkId && (
