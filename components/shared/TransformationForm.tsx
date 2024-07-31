@@ -13,15 +13,7 @@ import {
 } from "@/components/ui/select";
 
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   aspectRatioOptions,
@@ -60,6 +52,12 @@ const TransformationForm = ({
   const transformationType = transformationTypes[type];
   const { toast } = useToast();
   const [image, setImage] = useState(data);
+  const [version1Image, setVersion1Image] = useState(
+    image?.version1Image ?? null
+  );
+  const [version2Image, setVersion2Image] = useState<any>(
+    image?.version2Image ?? null
+  );
   const [newTransformation, setNewTransformation] =
     useState<Transformations | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,23 +68,21 @@ const TransformationForm = ({
   const [uploadedImageUrl, setUploadedImageUrl] = useState(
     data?.secureURL ?? null
   );
-  const [version2Image, setVersion2Image] = useState<any>(
-    image?.version2Image ?? null
-  );
   const [currentVersion, setCurrentVersion] = useState(
-    image?.version2Image ? "version2" : null
+     image ? image?.version1Image ? 'version1' : 'version2' : null
   );
 
   const initialValues =
     data && action === "Update"
       ? {
           title: data?.title,
-          aspectRatio: data?.aspectRatio,
-          color: data?.color,
-          prompt: data?.prompt,
+          aspectRatio: data?.aspectRatio ?? '',
+          color: data?.color ?? '',
+          prompt: data?.prompt ?? '',
           publicId: data?.publicId,
         }
       : defaultValues;
+
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -97,27 +93,42 @@ const TransformationForm = ({
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-
     if (data || image) {
-      const transformationUrl = getCldImageUrl({
-        width: image?.width,
-        height: image?.height,
-        src: image?.publicId,
-        ...transformationConfig,
-      });
       const imageData = {
         title: values.title,
         publicId: image?.publicId,
         transformationType: type,
         width: image?.width,
         height: image?.height,
-        config: transformationConfig,
+        config: {},
         secureURL: image?.secureURL,
-        transformationURL: transformationUrl,
-        aspectRatio: values.aspectRatio,
-        prompt: values.prompt,
-        color: values.color,
+        transformationURL: null,
+        aspectRatio: null,
+        prompt: null,
+        color: null,
       };
+      if (currentVersion === "version1") {
+        const transformationUrl = getCldImageUrl({
+          width: version1Image?.width,
+          height: version1Image?.height,
+          src: version1Image?.publicId,
+          ...transformationConfig,
+        });
+        imageData.version1Image = {
+          title: values.title,
+          publicId: version1Image?.publicId,
+          transformationType: type,
+          width: version1Image?.width,
+          height: version1Image?.height,
+          config: transformationConfig,
+          secureURL: image?.secureURL,
+          transformationUrl,
+          aspectRatio: values.aspectRatio,
+          prompt: values.prompt,
+          color: values.color,
+        };
+        imageData.version2Image = null;
+      }
 
       if (currentVersion === "version2") {
         imageData.version2Image = {
@@ -127,11 +138,10 @@ const TransformationForm = ({
           width: version2Image?.width,
           height: version2Image?.height,
           secureURL: version2Image?.secureURL,
-          transformationURL: transformationUrl,
+          transformationURL: null,
           aspectRatio: values.aspectRatio,
         };
-      } else {
-        imageData.version2Image = null;
+        imageData.version1Image = null;
       }
 
       if (action === "Add") {
@@ -174,6 +184,7 @@ const TransformationForm = ({
 
     setIsSubmitting(false);
   }
+
 
   const onSelectFieldHandler = (
     value: string,
@@ -316,6 +327,20 @@ const TransformationForm = ({
     }
   };
 
+  useEffect(() => {
+    if(image && !image?.version1Image && currentVersion === 'version1'){
+      setVersion1Image(prev => {
+        return {
+          ...prev,
+          publicId: image?.publicId,
+          width: image?.width,
+          height: image?.height,
+          secureURL: image?.secureURL,
+        }
+      })
+    }
+  },[image,currentVersion])
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -412,14 +437,16 @@ const TransformationForm = ({
             name="publicId"
             className="flex size-full flex-col"
             render={({ field }) => (
-              <MediaUploader
-                onValueChange={field.onChange}
-                setImage={setImage}
-                setUploadedImageUrl={setUploadedImageUrl}
-                publicId={field.value}
-                image={image}
-                type={type}
-              />
+              <>
+                <MediaUploader
+                  onValueChange={field.onChange}
+                  setImage={setImage}
+                  setUploadedImageUrl={setUploadedImageUrl}
+                  publicId={field.value}
+                  image={image}
+                  type={type}
+                />
+              </>
             )}
           />
 
@@ -433,6 +460,7 @@ const TransformationForm = ({
             setIsTransforming={setIsTransforming}
             transformationConfig={transformationConfig}
             setVersion2Image={setVersion2Image}
+            version1Image={version1Image}
             version2Image={version2Image}
             currentVersion={currentVersion}
             setCurrentVersion={setCurrentVersion}
@@ -443,7 +471,7 @@ const TransformationForm = ({
           <Button
             type="button"
             className="submit-button capitalize"
-            disabled={isTransforming || newTransformation === null}
+            disabled={isTransforming || newTransformation === null || version1Image}
             onClick={onTransformHandler}
           >
             {isTransforming && currentVersion === "version1"
@@ -453,7 +481,7 @@ const TransformationForm = ({
           <Button
             type="button"
             className="submit-button capitalize"
-            disabled={isTransforming || version2Image !== null}
+            disabled={isTransforming || version2Image !== null || version2Image}
             onClick={imageProcessWithVersion2}
           >
             {isTransforming && currentVersion === "version2"

@@ -22,7 +22,7 @@ export interface IImage extends Document {
 }
 
 const version2 = {
-  title: { type: String, required: true },
+  title: { type: String },
   transformationUrl: { type: String },
   transformationType: { type: String, required: true },
   publicId: { type: String, required: true },
@@ -30,6 +30,19 @@ const version2 = {
   width: { type: Number },
   aspectRatio: { type: String },
   height: { type: Number },
+};
+const version1 = {
+  title: { type: String },
+  transformationUrl: { type: String },
+  transformationType: { type: String, required: true },
+  publicId: { type: String, required: true },
+  secureURL: { type: String, required: true },
+  width: { type: Number },
+  aspectRatio: { type: String },
+  height: { type: Number },
+  config: { type: Object },
+  prompt: { type: String },
+  color: { type: String },
 };
 
 const ImageSchema = new Schema({
@@ -47,6 +60,10 @@ const ImageSchema = new Schema({
   author: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  version1Image: {
+    type: version1,
+    required: false,
+  },
   version2Image: {
     type: version2,
     required: false,

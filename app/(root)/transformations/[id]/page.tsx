@@ -6,16 +6,21 @@ import Header from "@/components/shared/Header";
 import TransformedImage from "@/components/shared/TransformedImage";
 import { Button } from "@/components/ui/button";
 import { getImageById } from "@/lib/actions/image.actions";
+import { addCredits, getUserById } from "@/lib/actions/user.actions";
 import { getImageSize } from "@/lib/utils";
 import { DeleteConfirmation } from "@/components/shared/DeleteConfirmation";
+import { redirect } from "next/navigation";
 
 const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
   const { userId } = auth();
 
   const image = await getImageById(id);
 
-  console.log(image);
+  // if (!userId) redirect("/sign-in");
 
+  // const user = await getUserById(userId);
+  // const addUserCredit = await addCredits(user._id);
+  console.log(image)
   return (
     <>
       <Header title={image.title} />
@@ -75,12 +80,14 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
           </div>
 
           {/* TRANSFORMED IMAGE */}
-          {image.version2Image ? (
+          {image.version2Image !== null ? (
             <TransformedImage
               image={image}
-              version2Image={image.version2Image}
+              version1Image={image?.version1Image}
+              version2Image={image?.version2Image}
               type={image.transformationType}
               title={image.title}
+              currentVersion={image?.version1Image ? "version1" : "version2"}
               isTransforming={false}
               transformationConfig={null}
               hasDownload={true}
@@ -90,10 +97,12 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
             <TransformedImage
               image={image}
               type={image.transformationType}
+              version1Image={image?.version1Image}
               version2Image={null}
               title={image.title}
+              currentVersion={image?.version1Image ? "version1" : "version2"}
               isTransforming={false}
-              transformationConfig={image.config}
+              transformationConfig={image.version1Image.config}
               hasDownload={true}
               action={"update"}
             />

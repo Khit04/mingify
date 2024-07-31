@@ -28,7 +28,7 @@ const Page = async ({ params: { id } }: SearchParamProps) => {
           userId={user._id}
           type={image.transformationType as TransformationTypeKey}
           creditBalance={user.creditBalance}
-          config={image.config}
+          config={image?.version1Image ? image?.version1Image.config : {}}
           data={image}
         />
       </section>

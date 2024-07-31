@@ -15,6 +15,7 @@ const TransformedImage = ({
   isTransforming,
   setIsTransforming,
   hasDownload = true,
+  version1Image,
   version2Image,
   currentVersion,
   setCurrentVersion,
@@ -32,9 +33,9 @@ const TransformedImage = ({
             src: version2Image?.publicId,
           })
         : getCldImageUrl({
-            width: image?.width,
-            height: image?.height,
-            src: image?.publicId,
+            width: version1Image?.width,
+            height: version1Image?.height,
+            src: version1Image?.publicId,
             ...transformationConfig,
           }),
       title
@@ -50,9 +51,9 @@ const TransformedImage = ({
             <button
               onClick={() => setCurrentVersion("version1")}
               type="button"
-              disabled={transformationConfig == null}
+              disabled={version1Image == null}
               className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
-                transformationConfig === null
+                version1Image == null
                   ? "cursor-not-allowed opacity-40"
                   : "opacity-100"
               } ${
@@ -96,13 +97,11 @@ const TransformedImage = ({
           </button>
         )}
       </div>
-
-      {!!(image?.publicId || version2Image?.publicId) &&
-      (transformationConfig ||
-        currentVersion === "version2" ||
-        (image?.prompt === "" && action == "update")) ? (
+      {(version1Image !== null || version2Image !== null) &&
+      currentVersion !== null ? (
         <div className="relative">
-          {currentVersion === "version2" || version2Image !== null ? (
+          {currentVersion === "version2" && version2Image !== null ? (
+            <>
             <CldImage
               width={getImageSize(type, version2Image, "width")}
               height={getImageSize(type, version2Image, "height")}
@@ -117,12 +116,15 @@ const TransformedImage = ({
                 }, 8000)();
               }}
             />
-          ) : (
+            </>
+          ) : null}
+
+          {currentVersion == "version1" && version1Image !== null ? (
             <CldImage
               width={getImageSize(type, image, "width")}
               height={getImageSize(type, image, "height")}
-              src={image?.publicId}
-              alt={image?.title}
+              src={version1Image?.publicId}
+              alt={version1Image?.title}
               sizes={"(max-width: 767px) 100vw, 50vw"}
               placeholder={dataUrl as PlaceholderValue}
               className="transformed-image"
@@ -136,7 +138,7 @@ const TransformedImage = ({
               }}
               {...transformationConfig}
             />
-          )}
+          ) : null}
 
           {isTransforming && (
             <div className="transforming-loader">
