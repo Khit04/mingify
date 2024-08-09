@@ -23,16 +23,28 @@ import {
 } from "@/constants";
 import { CustomField } from "./CustomField";
 import { useEffect, useState, useTransition } from "react";
-import { AspectRatioKey, debounce, deepMergeObjects } from "@/lib/utils";
+import {
+  AspectRatioKey,
+  dataUrl,
+  debounce,
+  deepMergeObjects,
+  getImageSize,
+} from "@/lib/utils";
 import MediaUploader from "./MediaUploader";
 import TransformedImage from "./TransformedImage";
 import { updateCredits } from "@/lib/actions/user.actions";
-import { getCldImageUrl } from "next-cloudinary";
-import { addImage, updateImage } from "@/lib/actions/image.actions";
+import { CldImage, getCldImageUrl } from "next-cloudinary";
+import {
+  addImage,
+  objectRemove,
+  recolor,
+  updateImage,
+} from "@/lib/actions/image.actions";
 import { useRouter } from "next/navigation";
 import { InsufficientCreditsModal } from "./InsufficientCreditsModal";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
+import { PlaceholderValue } from "next/dist/shared/lib/get-img-props";
 export const formSchema = z.object({
   title: z.string(),
   aspectRatio: z.string().optional(),
@@ -65,24 +77,38 @@ const TransformationForm = ({
   const [transformationConfig, setTransformationConfig] = useState(config);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [version1ImageStartTime, setVersion1ImageStartTime] = useState<
+    number | null
+  >(null);
+  const [version1ImageEndTime, setVersion1ImageEndTime] = useState<
+    number | null
+  >(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState(
     data?.secureURL ?? null
   );
-  const [currentVersion, setCurrentVersion] = useState(
-     image ? image?.version1Image ? 'version1' : 'version2' : null
+  const [version1FetchTime, setVersion1FetchTime] = useState<number | null>(
+    null
   );
+  const [version2FetchTime, setVersion2FetchTime] = useState<number | null>(
+    null
+  );
+  const [currentVersion, setCurrentVersion] = useState(
+    image ? (image?.version1Image ? "version1" : "version2") : null
+  );
+  const [currentSelectedVersion, setCurrentSelectedVersion] =
+    useState("version1");
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   const initialValues =
     data && action === "Update"
       ? {
           title: data?.title,
-          aspectRatio: data?.aspectRatio ?? '',
-          color: data?.color ?? '',
-          prompt: data?.prompt ?? '',
+          aspectRatio: data?.aspectRatio ?? "",
+          color: data?.color ?? "",
+          prompt: data?.prompt ?? "",
           publicId: data?.publicId,
         }
       : defaultValues;
-
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -185,7 +211,6 @@ const TransformationForm = ({
     setIsSubmitting(false);
   }
 
-
   const onSelectFieldHandler = (
     value: string,
     onChangeField: (value: string) => void
@@ -224,6 +249,7 @@ const TransformationForm = ({
   };
 
   const onTransformHandler = async () => {
+    setVersion1ImageStartTime(Date.now());
     setIsTransforming(true);
     setCurrentVersion("version1");
 
@@ -245,6 +271,7 @@ const TransformationForm = ({
   }, [image, transformationType.config, type]);
 
   const imageBgRemoveVersion2 = async () => {
+    const startTime = Date.now();
     const form = new FormData();
     form.append("url", uploadedImageUrl);
     const response = await axios.post(
@@ -257,6 +284,8 @@ const TransformationForm = ({
       }
     );
     const imgBase64 = response.data.results[0].entities[0].image;
+    const endTime = Date.now();
+    setVersion2FetchTime(endTime - startTime);
     const formData = new FormData();
     formData.append("file", `data:image/jpeg;base64,${imgBase64}`);
     formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
@@ -264,6 +293,7 @@ const TransformationForm = ({
   };
 
   const imageRestoringVersion2 = async () => {
+    const startTime = Date.now();
     const res = await axios.post(
       "https://api.claid.ai/v1-beta1/image/edit",
       {
@@ -281,11 +311,18 @@ const TransformationForm = ({
         },
       }
     );
+    const endTime = Date.now();
+    const requestTime = endTime - startTime;
     const file = res.data.data.output.tmp_url;
+    setVersion2FetchTime(requestTime);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
     imageUploadToCloudinary(formData);
+  };
+
+  const imageRecolorVersion2 = async () => {
+    objectRemove(uploadedImageUrl);
   };
 
   const imageProcessWithVersion2 = async () => {
@@ -296,6 +333,8 @@ const TransformationForm = ({
         imageBgRemoveVersion2();
       } else if (type == "restore") {
         imageRestoringVersion2();
+      } else if (type == "recolor") {
+        imageRecolorVersion2();
       }
     } catch (error) {
       console.log(error);
@@ -328,89 +367,68 @@ const TransformationForm = ({
   };
 
   useEffect(() => {
-    if(image && !image?.version1Image && currentVersion === 'version1'){
-      setVersion1Image(prev => {
+    if (image && !image?.version1Image && currentVersion === "version1") {
+      setVersion1Image((prev) => {
         return {
           ...prev,
           publicId: image?.publicId,
           width: image?.width,
           height: image?.height,
           secureURL: image?.secureURL,
-        }
-      })
+        };
+      });
     }
-  },[image,currentVersion])
+  }, [image, currentVersion]);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {creditBalance < Math.abs(creditFee) && <InsufficientCreditsModal />}
-        <CustomField
-          control={form.control}
-          name="title"
-          formLabel="Image Title"
-          className="w-full"
-          render={({ field }) => <Input {...field} className="input-field" />}
-        />
-
-        {type === "fill" && (
+    <div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {creditBalance < Math.abs(creditFee) && <InsufficientCreditsModal />}
           <CustomField
             control={form.control}
-            name="aspectRatio"
-            formLabel="Aspect Ratio"
+            name="title"
+            formLabel="Image Title"
             className="w-full"
-            render={({ field }) => (
-              <Select
-                onValueChange={(value) =>
-                  onSelectFieldHandler(value, field.onChange)
-                }
-                value={field.value}
-              >
-                <SelectTrigger className="select-field">
-                  <SelectValue placeholder="Select size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.keys(aspectRatioOptions).map((key) => (
-                    <SelectItem key={key} value={key} className="select-item">
-                      {aspectRatioOptions[key as AspectRatioKey].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            render={({ field }) => <Input {...field} className="input-field" />}
           />
-        )}
 
-        {(type === "remove" || type === "recolor") && (
-          <div className="prompt-field">
+          {type === "fill" && (
             <CustomField
               control={form.control}
-              name="prompt"
-              formLabel={
-                type === "remove" ? "Object to remove" : "Object to recolor"
-              }
+              name="aspectRatio"
+              formLabel="Aspect Ratio"
               className="w-full"
               render={({ field }) => (
-                <Input
-                  value={field.value}
-                  className="input-field"
-                  onChange={(e) =>
-                    onInputChangeHandler(
-                      "prompt",
-                      e.target.value,
-                      type,
-                      field.onChange
-                    )
+                <Select
+                  onValueChange={(value) =>
+                    onSelectFieldHandler(value, field.onChange)
                   }
-                />
+                  value={field.value}
+                >
+                  <SelectTrigger className="select-field">
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(aspectRatioOptions).map((key) => (
+                      <SelectItem key={key} value={key} className="select-item">
+                        {aspectRatioOptions[key as AspectRatioKey].label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             />
+          )}
 
-            {type === "recolor" && (
+          {(type === "remove" || type === "recolor") && (
+            <div className="prompt-field">
               <CustomField
                 control={form.control}
-                name="color"
-                formLabel="Replacement Color"
+                name="prompt"
+                formLabel={
+                  type === "remove" ? "Object to remove" : "Object to recolor"
+                }
                 className="w-full"
                 render={({ field }) => (
                   <Input
@@ -418,86 +436,216 @@ const TransformationForm = ({
                     className="input-field"
                     onChange={(e) =>
                       onInputChangeHandler(
-                        "color",
+                        "prompt",
                         e.target.value,
-                        "recolor",
+                        type,
                         field.onChange
                       )
                     }
                   />
                 )}
               />
-            )}
-          </div>
-        )}
 
-        <div className="media-uploader-field">
-          <CustomField
-            control={form.control}
-            name="publicId"
-            className="flex size-full flex-col"
-            render={({ field }) => (
-              <>
-                <MediaUploader
-                  onValueChange={field.onChange}
-                  setImage={setImage}
-                  setUploadedImageUrl={setUploadedImageUrl}
-                  publicId={field.value}
-                  image={image}
-                  type={type}
+              {type === "recolor" && (
+                <CustomField
+                  control={form.control}
+                  name="color"
+                  formLabel="Replacement Color"
+                  className="w-full"
+                  render={({ field }) => (
+                    <Input
+                      value={field.value}
+                      className="input-field"
+                      onChange={(e) =>
+                        onInputChangeHandler(
+                          "color",
+                          e.target.value,
+                          "recolor",
+                          field.onChange
+                        )
+                      }
+                    />
+                  )}
                 />
-              </>
-            )}
-          />
+              )}
+            </div>
+          )}
 
-          <TransformedImage
-            image={image}
-            type={type}
-            setImage={setImage}
-            uploadedImageUrl={uploadedImageUrl}
-            title={form.getValues().title}
-            isTransforming={isTransforming}
-            setIsTransforming={setIsTransforming}
-            transformationConfig={transformationConfig}
-            setVersion2Image={setVersion2Image}
-            version1Image={version1Image}
-            version2Image={version2Image}
-            currentVersion={currentVersion}
-            setCurrentVersion={setCurrentVersion}
-          />
-        </div>
+          <div className="media-uploader-field">
+            <CustomField
+              control={form.control}
+              name="publicId"
+              className="flex size-full flex-col"
+              render={({ field }) => (
+                <>
+                  <MediaUploader
+                    onValueChange={field.onChange}
+                    setImage={setImage}
+                    setUploadedImageUrl={setUploadedImageUrl}
+                    publicId={field.value}
+                    image={image}
+                    type={type}
+                  />
+                </>
+              )}
+            />
 
-        <div className="flex flex-col gap-4">
-          <Button
-            type="button"
-            className="submit-button capitalize"
-            disabled={isTransforming || newTransformation === null || version1Image}
-            onClick={onTransformHandler}
-          >
-            {isTransforming && currentVersion === "version1"
-              ? "Transforming..."
-              : " Apply Transformation with Version 1"}
-          </Button>
-          <Button
-            type="button"
-            className="submit-button capitalize"
-            disabled={isTransforming || version2Image !== null || version2Image}
-            onClick={imageProcessWithVersion2}
-          >
-            {isTransforming && currentVersion === "version2"
-              ? "Transforming..."
-              : "Apply Transformation With Version 2"}
-          </Button>
-          <Button
-            type="submit"
-            className="submit-button capitalize"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Save Image"}
-          </Button>
+            <TransformedImage
+              image={image}
+              type={type}
+              setImage={setImage}
+              uploadedImageUrl={uploadedImageUrl}
+              title={form.getValues().title}
+              isTransforming={isTransforming}
+              setIsTransforming={setIsTransforming}
+              transformationConfig={transformationConfig}
+              setVersion2Image={setVersion2Image}
+              version1Image={version1Image}
+              version2Image={version2Image}
+              currentVersion={currentVersion}
+              setCurrentVersion={setCurrentVersion}
+              isComparisonOpen={isComparisonOpen}
+              setIsComparisonOpen={setIsComparisonOpen}
+              version1ImageStartTime={version1ImageStartTime}
+              version1ImageEndTime={version1ImageStartTime}
+              setVersion1ImageEndTime={setVersion1ImageEndTime}
+              setVersion1FetchTime={setVersion1FetchTime}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Button
+              type="button"
+              className="submit-button capitalize"
+              disabled={
+                isTransforming || newTransformation === null || version1Image
+              }
+              onClick={onTransformHandler}
+            >
+              {isTransforming && currentVersion === "version1"
+                ? "Transforming..."
+                : " Apply Transformation with Version 1"}
+            </Button>
+            <Button
+              type="button"
+              className="submit-button capitalize"
+              disabled={
+                isTransforming ||
+                version2Image !== null ||
+                version2Image ||
+                uploadedImageUrl === null
+              }
+              onClick={imageProcessWithVersion2}
+            >
+              {isTransforming && currentVersion === "version2"
+                ? "Transforming..."
+                : "Apply Transformation With Version 2"}
+            </Button>
+            <Button
+              type="submit"
+              className="submit-button capitalize"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Save Image"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+      {isComparisonOpen ? (
+        <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
+          <div className="w-[70%] mx-auto bg-white px-5 py-10 rounded-lg">
+            <h1 className="text-black font-bold text-2xl pb-4 text-center ">
+              Comparison Modal
+            </h1>
+            <div className="flex items-center gap-5">
+              <div className="basis-[50%]">
+                <h1 className="pb-3">
+                  Version 1{" "}
+                  <span className="text-sm pl-3">
+                    (Fetch Time : {version1FetchTime}ms)
+                  </span>
+                </h1>
+                <div
+                  onClick={() => setCurrentSelectedVersion("version1")}
+                  className={`${
+                    currentSelectedVersion == "version1"
+                      ? "border-2 border-blue-500 rounded-xl"
+                      : ""
+                  }`}
+                >
+                  <CldImage
+                    width={getImageSize(type, version1Image, "width")}
+                    height={getImageSize(type, version1Image, "height")}
+                    src={version1Image?.publicId}
+                    alt={version1Image?.title}
+                    sizes={"(max-width: 767px) 100vw, 50vw"}
+                    placeholder={dataUrl as PlaceholderValue}
+                    className="transformed-image"
+                    onLoad={() => {
+                      setIsTransforming && setIsTransforming(false);
+                    }}
+                    onError={() => {
+                      debounce(() => {
+                        setIsTransforming && setIsTransforming(false);
+                      }, 8000)();
+                    }}
+                    {...transformationConfig}
+                  />
+                </div>
+              </div>
+              <div className="basis-[50%]">
+                <h1 className="pb-3">
+                  Version 2{" "}
+                  <span className="text-sm pl-3">
+                    (Fetch Time : {version2FetchTime}ms)
+                  </span>
+                </h1>
+                <div
+                  onClick={() => setCurrentSelectedVersion("version2")}
+                  className={`${
+                    currentSelectedVersion == "version2"
+                      ? "border-2 border-blue-500 rounded-xl"
+                      : ""
+                  }`}
+                >
+                  <CldImage
+                    width={getImageSize(type, version2Image, "width")}
+                    height={getImageSize(type, version2Image, "height")}
+                    src={version2Image?.publicId}
+                    alt={version2Image?.title}
+                    sizes={"(max-width: 767px) 100vw, 50vw"}
+                    placeholder={dataUrl as PlaceholderValue}
+                    className="transformed-image"
+                    onLoad={() => {
+                      setIsTransforming && setIsTransforming(false);
+                    }}
+                    onError={() => {
+                      debounce(() => {
+                        setIsTransforming && setIsTransforming(false);
+                      }, 8000)();
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end mt-5 gap-3">
+              <Button type="button" onClick={() => setIsComparisonOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setCurrentVersion(currentSelectedVersion);
+                  setIsComparisonOpen(false);
+                }}
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
         </div>
-      </form>
-    </Form>
+      ) : null}
+    </div>
   );
 };
 

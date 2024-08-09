@@ -20,6 +20,12 @@ const TransformedImage = ({
   currentVersion,
   setCurrentVersion,
   action = null,
+  isComparisonOpen,
+  setIsComparisonOpen,
+  version1ImageStartTime,
+  version1ImageEndTime,
+  setVersion1ImageEndTime,
+  setVersion1FetchTime,
 }: TransformedImageProps) => {
   const downloadHandler = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -62,7 +68,7 @@ const TransformedImage = ({
                   : "border-transparent"
               }`}
             >
-              Version 1
+              V1
             </button>
             {type == "removeBackground" || type == "restore" ? (
               <button
@@ -79,9 +85,22 @@ const TransformedImage = ({
                     : "border-transparent"
                 }`}
               >
-                Version 2
+                V2
               </button>
             ) : null}
+
+            <button
+              type="button"
+              onClick={() => setIsComparisonOpen(true)}
+              disabled={version2Image == null || version1Image == null}
+              className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
+                version1Image == null || version2Image == null
+                  ? "cursor-not-allowed opacity-40"
+                  : "opacity-100"
+              }`}
+            >
+              Compare
+            </button>
           </div>
         ) : null}
 
@@ -102,20 +121,20 @@ const TransformedImage = ({
         <div className="relative">
           {currentVersion === "version2" && version2Image !== null ? (
             <>
-            <CldImage
-              width={getImageSize(type, version2Image, "width")}
-              height={getImageSize(type, version2Image, "height")}
-              src={version2Image?.publicId}
-              alt={version2Image?.title}
-              sizes={"(max-width: 767px) 100vw, 50vw"}
-              placeholder={dataUrl as PlaceholderValue}
-              className="transformed-image"
-              onError={() => {
-                debounce(() => {
-                  setIsTransforming && setIsTransforming(false);
-                }, 8000)();
-              }}
-            />
+              <CldImage
+                width={getImageSize(type, version2Image, "width")}
+                height={getImageSize(type, version2Image, "height")}
+                src={version2Image?.publicId}
+                alt={version2Image?.title}
+                sizes={"(max-width: 767px) 100vw, 50vw"}
+                placeholder={dataUrl as PlaceholderValue}
+                className="transformed-image"
+                onError={() => {
+                  debounce(() => {
+                    setIsTransforming && setIsTransforming(false);
+                  }, 8000)();
+                }}
+              />
             </>
           ) : null}
 
@@ -129,6 +148,8 @@ const TransformedImage = ({
               placeholder={dataUrl as PlaceholderValue}
               className="transformed-image"
               onLoad={() => {
+                setVersion1ImageEndTime((prev) => Date.now());
+                setVersion1FetchTime(Date.now() - version1ImageStartTime);
                 setIsTransforming && setIsTransforming(false);
               }}
               onError={() => {

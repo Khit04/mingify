@@ -8,6 +8,7 @@ import Image from "../database/models/image.model";
 import { redirect } from "next/navigation";
 import { v2 as cloudinary } from "cloudinary";
 import { Images } from "lucide-react";
+import axios from "axios";
 
 const populateUser = (query: any) =>
   query.populate({
@@ -34,6 +35,49 @@ export async function addImage({ image, userId, path }: AddImageParams) {
     return JSON.parse(JSON.stringify(newImage));
   } catch (error) {
     handleError(error);
+  }
+}
+
+export async function recolor(uploadedImageUrl: string) {
+  const form = new FormData();
+  form.append("image_url", uploadedImageUrl);
+  form.append("prompt", "red");
+  try {
+    const response = await axios.post(
+      "https://api.developer.pixelcut.ai/v1/generate-background",
+      form,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-API-KEY": "sk_876ba0a625ee40b5800852531e234ddd",
+        },
+      }
+    );
+    console.log(response);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+export async function objectRemove(uploadedImageUrl: string) {
+  const form = new FormData();
+  form.append("url", uploadedImageUrl);
+  try {
+    const response = await axios.post(
+      "https://object-remover.p.rapidapi.com/image/inpaint/v1",
+      form,
+      {
+        headers: {
+          "x-rapidapi-key":
+            "3af307dadamsh158b927ced91939p1f748ajsne8d4161c4ae9",
+          "x-rapidapi-host": "object-remover.p.rapidapi.com",
+        },
+      }
+    );
+    console.log(response);
+  } catch (error) {
+    console.error(error);
   }
 }
 
