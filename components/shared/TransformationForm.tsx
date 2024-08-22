@@ -526,21 +526,25 @@ const TransformationForm = ({
                 ? "Transforming..."
                 : " Apply Transformation with Version 1"}
             </Button>
-            <Button
-              type="button"
-              className="submit-button capitalize"
-              disabled={
-                isTransforming ||
-                version2Image !== null ||
-                version2Image ||
-                uploadedImageUrl === null
-              }
-              onClick={imageProcessWithVersion2}
-            >
-              {isTransforming && currentVersion === "version2"
-                ? "Transforming..."
-                : "Apply Transformation With Version 2"}
-            </Button>
+            {
+              type == "removeBackground" || type == "restore" ? (
+                <Button
+                  type="button"
+                  className="submit-button capitalize"
+                  disabled={
+                    isTransforming ||
+                    version2Image !== null ||
+                    version2Image ||
+                    uploadedImageUrl === null
+                  }
+                  onClick={imageProcessWithVersion2}
+                >
+                  {isTransforming && currentVersion === "version2"
+                    ? "Transforming..."
+                    : "Apply Transformation With Version 2"}
+                </Button>
+              ) : null
+            }
             <Button
               type="submit"
               className="submit-button capitalize"

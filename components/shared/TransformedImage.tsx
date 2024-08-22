@@ -5,7 +5,6 @@ import { CldImage, getCldImageUrl } from "next-cloudinary";
 import { PlaceholderValue } from "next/dist/shared/lib/get-img-props";
 import Image from "next/image";
 import React from "react";
-import axios from "axios";
 
 const TransformedImage = ({
   image,
@@ -54,22 +53,26 @@ const TransformedImage = ({
         <h3 className="h3-bold text-dark-600">Transformed</h3>
         {action !== "update" ? (
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentVersion("version1")}
-              type="button"
-              disabled={version1Image == null}
-              className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
-                version1Image == null
-                  ? "cursor-not-allowed opacity-40"
-                  : "opacity-100"
-              } ${
-                currentVersion === "version1"
-                  ? "border-blue-400"
-                  : "border-transparent"
-              }`}
-            >
-              V1
-            </button>
+            {
+              type == "removeBackground" || type == "restore" ? (
+                <button
+                  onClick={() => setCurrentVersion("version1")}
+                  type="button"
+                  disabled={version1Image == null}
+                  className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
+                    version1Image == null
+                      ? "cursor-not-allowed opacity-40"
+                      : "opacity-100"
+                  } ${
+                    currentVersion === "version1"
+                      ? "border-blue-400"
+                      : "border-transparent"
+                  }`}
+                >
+                  V1
+                </button>
+              ) : null
+            }
             {type == "removeBackground" || type == "restore" ? (
               <button
                 type="button"
@@ -89,18 +92,22 @@ const TransformedImage = ({
               </button>
             ) : null}
 
-            <button
-              type="button"
-              onClick={() => setIsComparisonOpen(true)}
-              disabled={version2Image == null || version1Image == null}
-              className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
-                version1Image == null || version2Image == null
-                  ? "cursor-not-allowed opacity-40"
-                  : "opacity-100"
-              }`}
-            >
-              Compare
-            </button>
+            {
+              type == 'removeBackground' || type == 'restore' ? (
+                <button
+                  type="button"
+                  onClick={() => setIsComparisonOpen(true)}
+                  disabled={version2Image == null || version1Image == null}
+                  className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
+                    version1Image == null || version2Image == null
+                      ? "cursor-not-allowed opacity-40"
+                      : "opacity-100"
+                  }`}
+                >
+                  Compare
+                </button>
+              ) : null
+            }
           </div>
         ) : null}
 
@@ -119,7 +126,7 @@ const TransformedImage = ({
       {(version1Image !== null || version2Image !== null) &&
       currentVersion !== null ? (
         <div className="relative">
-          {currentVersion === "version2" && version2Image !== null ? (
+          {currentVersion === "version2"  ? version2Image !== null ? (
             <>
               <CldImage
                 width={getImageSize(type, version2Image, "width")}
@@ -136,7 +143,9 @@ const TransformedImage = ({
                 }}
               />
             </>
-          ) : null}
+          ) : <div className="transformed-placeholder" style={{backgroundColor : '#7885AB'}}>
+            {/* <Image src={dataUrl} height={288} alt="placeholder" width={100} /> */}
+          </div>  : null}
 
           {currentVersion == "version1" && version1Image !== null ? (
             <CldImage
@@ -148,8 +157,12 @@ const TransformedImage = ({
               placeholder={dataUrl as PlaceholderValue}
               className="transformed-image"
               onLoad={() => {
-                setVersion1ImageEndTime((prev) => Date.now());
-                setVersion1FetchTime(Date.now() - version1ImageStartTime);
+                if(setVersion1FetchTime){
+                  setVersion1ImageEndTime((prev) => Date.now());
+                }
+                if(setVersion1FetchTime){
+                  setVersion1FetchTime(Date.now() - version1ImageStartTime);
+                }
                 setIsTransforming && setIsTransforming(false);
               }}
               onError={() => {

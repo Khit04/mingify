@@ -23,9 +23,9 @@ const Credits = async () => {
       />
 
       <section>
-        <ul className="credits-list">
+        <div className="credits-list">
           {plans.map((plan) => (
-            <li key={plan.name} className="credits-item">
+            <div key={plan.name} className="credits-item">
               <div className="flex-center flex-col gap-3">
                 <Image src={plan.icon} alt="check" width={50} height={50} />
                 <p className="p-20-semibold mt-2 text-purple-500">
@@ -69,9 +69,9 @@ const Credits = async () => {
                   />
                 </SignedIn>
               )}
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
     </>
   );
