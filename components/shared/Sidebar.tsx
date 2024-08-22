@@ -1,15 +1,125 @@
 "use client"
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import { auth, SignedIn, SignedOut, useAuth, UserButton } from '@clerk/nextjs'
 import { navLinks } from '@/constants'
 import { usePathname } from 'next/navigation'
 import { Button } from '../ui/button'
+import { Steps } from 'intro.js-react'
 
+const steps = [
+  {
+    element: '#login-button',
+    intro: 'To can use image processing.You need to Login Or Signup first🥳.You can Login or Signup by clicking login button',
+  }
+];
+const navSteps = [
+  {
+    element: '#Home',
+    intro: 'In Home page, you can watch other people images and you can search what do you want to see.',
+  },
+  {
+    element: '#ImageRestore',
+    intro: 'In Image restore pgae you can restore your image old image.',
+  },
+  {
+    element: '#GenerativeFill',
+    intro: 'In generative fill page you can resize your image with aspect ratio as you want.',
+  },
+  {
+    element: '#ObjectRemove',
+    intro: 'In object remove page you can remove everything that you don\'t want, just by typing text you want to remove.🤩',
+  },
+  {
+    element: '#ObjectRecolor',
+    intro: 'In object recolor page you can change color by typing color that you want to change.',
+  },
+  {
+    element: '#BackgroundRemove',
+    intro: 'In background remove page you can remove your image background by clicking button.',
+  },
+  {
+    element : "#Profile",
+    intro : 'In profile page, you can see your credits that will be used for every image processing. And you can also watch your images.'
+  },
+  {
+    element : "#credit",
+    intro : 'This credit will be one image processing per one credit.',
+    position : 'right'
+  },
+  {
+    element : "#BuyCredits",
+    intro : 'In credits page, you can buy credit that can use for image processing if you ran out your credits.'
+  },
+];
 const Sidebar = () => {
   const pathname = usePathname();
+  const {userId} = useAuth();
+  const [showLoginStep,setShowLoginStep] = useState(false);
+  const [showAuthNavStep,setShowAuthNavStep] = useState(false);
+  const [authNavSteps,setAuthNavSteps] = useState(navSteps)
+  useEffect(() => {
+    if(!userId && !localStorage.getItem('isDoneLoginStep')){
+      setShowLoginStep(true);
+    }
+  },[])
+
+  useEffect(() => {
+    if(userId && !localStorage.getItem('isDoneAuthNav')){
+      setShowAuthNavStep(true);
+    }
+  },[])
+
+  useEffect(() => {
+    console.log('change path nae')
+    let updatedAuthSteps = navSteps.filter(step => {
+      let element = document.querySelector(step.element);
+      return !!element?.getClientRects().length
+    })
+    console.log(updatedAuthSteps)
+    setAuthNavSteps(updatedAuthSteps)
+  },[pathname])
+
+
+  const handleLoginStepExit = (stepIndex : any = steps.length) => {
+    if(stepIndex!==0){
+      localStorage.setItem('isDoneLoginStep',true);
+    }
+    setShowLoginStep(false)
+  }
+  const handleAuthNavStepExit = (stepIndex : any = authNavSteps.length) => {
+    if(stepIndex != 0){
+      localStorage.setItem('isDoneAuthNav',true);
+    }
+    setShowAuthNavStep(false)
+  }
+
   return (
+    <>
+    <Steps
+        enabled={showLoginStep}
+        steps={steps}
+        options={{
+          exitOnEsc : false,
+          exitOnOverlayClick : false
+        }}
+        onComplete={handleLoginStepExit}
+        initialStep={0}
+        onExit={handleLoginStepExit}
+      />
+
+      <Steps
+        enabled={showAuthNavStep}
+        steps={authNavSteps}
+        options={{
+          exitOnEsc:false,
+          exitOnOverlayClick : false
+        }}
+        onComplete={handleAuthNavStepExit}
+        initialStep={0}
+        onExit={handleAuthNavStepExit}
+      />
     <aside className="sidebar">
       <div className="flex side-full flex-col gap-4">
         <Link href="/" className="sidebar-logo">
@@ -25,7 +135,7 @@ const Sidebar = () => {
                   <li key={link.route} className={`sidebar-nav_element group ${
                     isActive ? 'bg-custom-active text-white' : 'text-gray-800'
                   }`}>
-                    <Link className="sidebar-link" href={link.route}>
+                    <Link id={link.label.split(' ').join('')} className="sidebar-link" href={link.route}>
                       <Image 
                         src={link.icon}
                         alt="logo"
@@ -44,7 +154,7 @@ const Sidebar = () => {
             {navLinks.slice(6).map((link)=>{
                 const isActive = link.route === pathname
                 return(
-                  <li key={link.route} className={`sidebar-nav_element group ${
+                  <li id={link.label.split(' ').join('')} key={link.route} className={`sidebar-nav_element group ${
                     isActive ? 'bg-[#00273f] text-white' : 'text-gray-700'
                   }`}>
                     <Link className="sidebar-link" href={link.route}>
@@ -67,13 +177,14 @@ const Sidebar = () => {
           </SignedIn>
 
           <SignedOut>
-            <Button asChild className="button bg-[#00273f] bg-cover">
+            <Button asChild id="login-button" className="button bg-[#00273f] bg-cover">
               <Link href="/sign-in">Login</Link>
             </Button>
           </SignedOut>
         </nav>
       </div>
     </aside>
+    </>
   )
 }
 

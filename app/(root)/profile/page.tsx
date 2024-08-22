@@ -21,9 +21,9 @@ const Profile = async ({ searchParams }: SearchParamProps) => {
       <Header title="Profile" />
 
       <section className="profile">
-        <div className="profile-balance">
+        <div id="credit" className="profile-balance">
           <p className="p-14-medium md:p-16-medium">CREDITS AVAILABLE</p>
-          <div className="mt-4 flex items-center gap-4">
+          <div  className="mt-4 flex items-center gap-4">
             <Image
               src="/assets/icons/coins.svg"
               alt="coins"
