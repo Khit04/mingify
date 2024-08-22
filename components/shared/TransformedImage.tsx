@@ -149,8 +149,8 @@ const TransformedImage = ({
 
           {currentVersion == "version1" && version1Image !== null ? (
             <CldImage
-              width={getImageSize(type, image, "width")}
-              height={getImageSize(type, image, "height")}
+              width={getImageSize(type, version1Image, "width")}
+              height={getImageSize(type, version1Image, "height")}
               src={version1Image?.publicId}
               alt={version1Image?.title}
               sizes={"(max-width: 767px) 100vw, 50vw"}
