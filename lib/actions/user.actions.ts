@@ -92,6 +92,25 @@ export async function updateCredits(userId: string, creditFee: number) {
   }
 }
 
+export async function updateTour(userId: string,isLoginTourDone : boolean =false,isAuthTourDone:boolean = false,){
+  try {
+    await connectToDatabase();
+   await User.findOneAndUpdate({
+      _id : userId,
+    },
+    {
+      isLoginTourDone,
+      isAuthTourDone,
+    },{
+      new : true
+    }
+  )
+  return user;
+  }catch(error){
+
+  }
+}
+
 export async function addCredits(userId: string) {
   try {
     await connectToDatabase();

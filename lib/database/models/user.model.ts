@@ -11,6 +11,16 @@ const UserSchema = new Schema({
     required: true,
     unique: true,
   },
+  isLoginTourDone : {
+    type : Boolean,
+    required : true,
+    default : false,
+  },
+  isAuthTourDone : {
+    type : Boolean,
+    required : true,
+    default : false,
+  },
   username: {
     type: String,
     required: true,

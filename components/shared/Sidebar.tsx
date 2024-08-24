@@ -7,6 +7,7 @@ import { navLinks } from '@/constants'
 import { usePathname } from 'next/navigation'
 import { Button } from '../ui/button'
 import { Steps } from 'intro.js-react'
+import { getUserById, updateTour } from '@/lib/actions/user.actions'
 
 const steps = [
   {
@@ -58,6 +59,7 @@ const Sidebar = () => {
   const {userId} = useAuth();
   const [showLoginStep,setShowLoginStep] = useState(false);
   const [showAuthNavStep,setShowAuthNavStep] = useState(false);
+  const [user,setUser] = useState<any>(null);
   const [authNavSteps,setAuthNavSteps] = useState(navSteps)
   useEffect(() => {
     if(!userId && !localStorage.getItem('isDoneLoginStep')){
@@ -65,8 +67,22 @@ const Sidebar = () => {
     }
   },[])
 
+
   useEffect(() => {
-    if(userId && !localStorage.getItem('isDoneAuthNav')){
+    const getUser = async () => {
+      const user = await getUserById(userId as string);
+      setUser(user);
+    };
+
+    if(userId){
+      getUser();
+    }
+
+  },[userId])
+
+
+  useEffect(() => {
+    if(userId && !localStorage.getItem('isDoneAuthNav'+userId) && !user?.isAuthTourDone){
       setShowAuthNavStep(true);
     }
   },[])
@@ -88,12 +104,15 @@ const Sidebar = () => {
     }
     setShowLoginStep(false)
   }
-  const handleAuthNavStepExit = (stepIndex : any = authNavSteps.length) => {
+  const handleAuthNavStepExit = async(stepIndex : any = authNavSteps.length) => {
     if(stepIndex != 0){
-      localStorage.setItem('isDoneAuthNav',true);
+      localStorage.setItem('isDoneAuthNav'+userId,true);
+      const response = await updateTour(userId as string,!!localStorage.getItem('isDoneLoginStep'),!!localStorage.getItem('isDoneAuthNav' + userId))
     }
     setShowAuthNavStep(false)
   }
+
+  console.log(user)
 
   return (
     <>
