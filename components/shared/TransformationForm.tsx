@@ -524,7 +524,7 @@ const TransformationForm = ({
             >
               {isTransforming && currentVersion === "version1"
                 ? "Transforming..."
-                : " Apply Transformation with Version 1"}
+                : " Apply Transformation"}
             </Button>
             {
               type == "removeBackground" || type == "restore" ? (
@@ -541,7 +541,7 @@ const TransformationForm = ({
                 >
                   {isTransforming && currentVersion === "version2"
                     ? "Transforming..."
-                    : "Apply Transformation With Version 2"}
+                    : "Try another result"}
                 </Button>
               ) : null
             }

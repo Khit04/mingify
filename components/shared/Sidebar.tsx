@@ -22,7 +22,7 @@ const navSteps = [
   },
   {
     element: '#ImageRestore',
-    intro: 'In Image restore pgae you can restore your image old image.',
+    intro: 'In Image restore page you can restore your image old image.',
   },
   {
     element: '#GenerativeFill',
