@@ -132,7 +132,7 @@ const TransformationForm = ({
         aspectRatio: null,
         prompt: null,
         color: null,
-      };
+      } as any;
       if (currentVersion === "version1") {
         const transformationUrl = getCldImageUrl({
           width: version1Image?.width,
@@ -288,7 +288,10 @@ const TransformationForm = ({
     setVersion2FetchTime(endTime - startTime);
     const formData = new FormData();
     formData.append("file", `data:image/jpeg;base64,${imgBase64}`);
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
+    formData.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_PRESET_NAME as string
+    );
     imageUploadToCloudinary(formData);
   };
 
@@ -317,7 +320,10 @@ const TransformationForm = ({
     setVersion2FetchTime(requestTime);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME);
+    formData.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_PRESET_NAME as string
+    );
     imageUploadToCloudinary(formData);
   };
 
@@ -368,7 +374,7 @@ const TransformationForm = ({
 
   useEffect(() => {
     if (image && !image?.version1Image && currentVersion === "version1") {
-      setVersion1Image((prev) => {
+      setVersion1Image((prev: any) => {
         return {
           ...prev,
           publicId: image?.publicId,
@@ -491,15 +497,13 @@ const TransformationForm = ({
             />
 
             <TransformedImage
+              action={null}
               image={image}
               type={type}
-              setImage={setImage}
-              uploadedImageUrl={uploadedImageUrl}
               title={form.getValues().title}
               isTransforming={isTransforming}
               setIsTransforming={setIsTransforming}
               transformationConfig={transformationConfig}
-              setVersion2Image={setVersion2Image}
               version1Image={version1Image}
               version2Image={version2Image}
               currentVersion={currentVersion}
@@ -526,25 +530,23 @@ const TransformationForm = ({
                 ? "Transforming..."
                 : " Apply Transformation with Version 1"}
             </Button>
-            {
-              type == "removeBackground" || type == "restore" ? (
-                <Button
-                  type="button"
-                  className="submit-button capitalize"
-                  disabled={
-                    isTransforming ||
-                    version2Image !== null ||
-                    version2Image ||
-                    uploadedImageUrl === null
-                  }
-                  onClick={imageProcessWithVersion2}
-                >
-                  {isTransforming && currentVersion === "version2"
-                    ? "Transforming..."
-                    : "Apply Transformation With Version 2"}
-                </Button>
-              ) : null
-            }
+            {type == "removeBackground" || type == "restore" ? (
+              <Button
+                type="button"
+                className="submit-button capitalize"
+                disabled={
+                  isTransforming ||
+                  version2Image !== null ||
+                  version2Image ||
+                  uploadedImageUrl === null
+                }
+                onClick={imageProcessWithVersion2}
+              >
+                {isTransforming && currentVersion === "version2"
+                  ? "Transforming..."
+                  : "Apply Transformation With Version 2"}
+              </Button>
+            ) : null}
             <Button
               type="submit"
               className="submit-button capitalize"

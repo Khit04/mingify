@@ -18,7 +18,7 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
 
   // const user = await getUserById(userId);
   // const addUserCredit = await addCredits(user._id);
-  console.log(image)
+  console.log(image);
   return (
     <>
       <Header title={image.title} />
@@ -80,6 +80,14 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
           {/* TRANSFORMED IMAGE */}
           {image.version2Image !== null ? (
             <TransformedImage
+              isComparisonOpen={null}
+              setCurrentVersion={() => {}}
+              setIsComparisonOpen={() => {}}
+              setVersion1FetchTime={() => {}}
+              setVersion1ImageEndTime={() => {}}
+              version1ImageEndTime={null}
+              version1ImageStartTime={null}
+              setIsTransforming={() => {}}
               image={image}
               version1Image={image?.version1Image}
               version2Image={image?.version2Image}
@@ -93,6 +101,14 @@ const ImageDetails = async ({ params: { id } }: SearchParamProps) => {
             />
           ) : (
             <TransformedImage
+              isComparisonOpen={() => {}}
+              setCurrentVersion={() => {}}
+              setIsComparisonOpen={() => {}}
+              setVersion1FetchTime={() => {}}
+              setVersion1ImageEndTime={null}
+              version1ImageEndTime={null}
+              version1ImageStartTime={null}
+              setIsTransforming={() => {}}
               image={image}
               type={image.transformationType}
               version1Image={image?.version1Image}

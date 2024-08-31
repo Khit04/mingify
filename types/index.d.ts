@@ -31,7 +31,7 @@ declare type AddImageParams = {
     aspectRatio: string | undefined;
     prompt: string | undefined;
     color: string | undefined;
-    version2Image : any
+    version2Image: any;
   };
   userId: string;
   path: string;
@@ -126,7 +126,6 @@ declare type TransformationFormProps = {
   creditBalance: number;
   data?: IImage | null;
   config?: Transformations | null;
-  
 };
 
 declare type TransformedImageProps = {
@@ -137,4 +136,15 @@ declare type TransformedImageProps = {
   isTransforming: boolean;
   hasDownload?: boolean;
   setIsTransforming?: React.Dispatch<React.SetStateAction<boolean>>;
+  version1Image: any;
+  version2Image: any;
+  currentVersion: any;
+  setCurrentVersion: any;
+  action: any;
+  isComparisonOpen: any;
+  setIsComparisonOpen: any;
+  version1ImageStartTime: any;
+  version1ImageEndTime: any;
+  setVersion1ImageEndTime: any;
+  setVersion1FetchTime: any;
 };

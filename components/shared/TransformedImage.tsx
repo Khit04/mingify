@@ -53,26 +53,24 @@ const TransformedImage = ({
         <h3 className="h3-bold text-dark-600">Transformed</h3>
         {action !== "update" ? (
           <div className="flex items-center gap-4">
-            {
-              type == "removeBackground" || type == "restore" ? (
-                <button
-                  onClick={() => setCurrentVersion("version1")}
-                  type="button"
-                  disabled={version1Image == null}
-                  className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
-                    version1Image == null
-                      ? "cursor-not-allowed opacity-40"
-                      : "opacity-100"
-                  } ${
-                    currentVersion === "version1"
-                      ? "border-blue-400"
-                      : "border-transparent"
-                  }`}
-                >
-                  V1
-                </button>
-              ) : null
-            }
+            {type == "removeBackground" || type == "restore" ? (
+              <button
+                onClick={() => setCurrentVersion("version1")}
+                type="button"
+                disabled={version1Image == null}
+                className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
+                  version1Image == null
+                    ? "cursor-not-allowed opacity-40"
+                    : "opacity-100"
+                } ${
+                  currentVersion === "version1"
+                    ? "border-blue-400"
+                    : "border-transparent"
+                }`}
+              >
+                V1
+              </button>
+            ) : null}
             {type == "removeBackground" || type == "restore" ? (
               <button
                 type="button"
@@ -92,22 +90,20 @@ const TransformedImage = ({
               </button>
             ) : null}
 
-            {
-              type == 'removeBackground' || type == 'restore' ? (
-                <button
-                  type="button"
-                  onClick={() => setIsComparisonOpen(true)}
-                  disabled={version2Image == null || version1Image == null}
-                  className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
-                    version1Image == null || version2Image == null
-                      ? "cursor-not-allowed opacity-40"
-                      : "opacity-100"
-                  }`}
-                >
-                  Compare
-                </button>
-              ) : null
-            }
+            {type == "removeBackground" || type == "restore" ? (
+              <button
+                type="button"
+                onClick={() => setIsComparisonOpen(true)}
+                disabled={version2Image == null || version1Image == null}
+                className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
+                  version1Image == null || version2Image == null
+                    ? "cursor-not-allowed opacity-40"
+                    : "opacity-100"
+                }`}
+              >
+                Compare
+              </button>
+            ) : null}
           </div>
         ) : null}
 
@@ -126,26 +122,33 @@ const TransformedImage = ({
       {(version1Image !== null || version2Image !== null) &&
       currentVersion !== null ? (
         <div className="relative">
-          {currentVersion === "version2"  ? version2Image !== null ? (
-            <>
-              <CldImage
-                width={getImageSize(type, version2Image, "width")}
-                height={getImageSize(type, version2Image, "height")}
-                src={version2Image?.publicId}
-                alt={version2Image?.title}
-                sizes={"(max-width: 767px) 100vw, 50vw"}
-                placeholder={dataUrl as PlaceholderValue}
-                className="transformed-image"
-                onError={() => {
-                  debounce(() => {
-                    setIsTransforming && setIsTransforming(false);
-                  }, 8000)();
-                }}
-              />
-            </>
-          ) : <div className="transformed-placeholder" style={{backgroundColor : '#7885AB'}}>
-            {/* <Image src={dataUrl} height={288} alt="placeholder" width={100} /> */}
-          </div>  : null}
+          {currentVersion === "version2" ? (
+            version2Image !== null ? (
+              <>
+                <CldImage
+                  width={getImageSize(type, version2Image, "width")}
+                  height={getImageSize(type, version2Image, "height")}
+                  src={version2Image?.publicId}
+                  alt={version2Image?.title}
+                  sizes={"(max-width: 767px) 100vw, 50vw"}
+                  placeholder={dataUrl as PlaceholderValue}
+                  className="transformed-image"
+                  onError={() => {
+                    debounce(() => {
+                      setIsTransforming && setIsTransforming(false);
+                    }, 8000)();
+                  }}
+                />
+              </>
+            ) : (
+              <div
+                className="transformed-placeholder"
+                style={{ backgroundColor: "#7885AB" }}
+              >
+                {/* <Image src={dataUrl} height={288} alt="placeholder" width={100} /> */}
+              </div>
+            )
+          ) : null}
 
           {currentVersion == "version1" && version1Image !== null ? (
             <CldImage
@@ -157,10 +160,10 @@ const TransformedImage = ({
               placeholder={dataUrl as PlaceholderValue}
               className="transformed-image"
               onLoad={() => {
-                if(setVersion1FetchTime){
-                  setVersion1ImageEndTime((prev) => Date.now());
+                if (setVersion1FetchTime) {
+                  setVersion1ImageEndTime((prev: any) => Date.now());
                 }
-                if(setVersion1FetchTime){
+                if (setVersion1FetchTime) {
                   setVersion1FetchTime(Date.now() - version1ImageStartTime);
                 }
                 setIsTransforming && setIsTransforming(false);

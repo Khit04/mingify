@@ -11,6 +11,7 @@ type MediaUploaderProps = {
   publicId: string;
   image: any;
   type: string;
+  setUploadedImageUrl: any;
 };
 
 const MediaUploader = ({
