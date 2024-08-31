@@ -23,8 +23,8 @@ const navSteps = [
       "In Home page, you can watch other people images and you can search what do you want to see.",
   },
   {
-    element: "#ImageRestore",
-    intro: "In Image restore pgae you can restore your image old image.",
+    element: '#ImageRestore',
+    intro: 'In Image restore page you can restore your image old image.',
   },
   {
     element: "#GenerativeFill",

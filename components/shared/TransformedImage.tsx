@@ -58,7 +58,7 @@ const TransformedImage = ({
                 onClick={() => setCurrentVersion("version1")}
                 type="button"
                 disabled={version1Image == null}
-                className={`bg-primary py-3 px-5  border-2 font-medium text-white rounded-md ${
+                className={`bg-primary py-1 px-3  border-2 font-medium text-white rounded-md ${
                   version1Image == null
                     ? "cursor-not-allowed opacity-40"
                     : "opacity-100"
@@ -68,7 +68,7 @@ const TransformedImage = ({
                     : "border-transparent"
                 }`}
               >
-                V1
+                img1
               </button>
             ) : null}
             {type == "removeBackground" || type == "restore" ? (
@@ -76,7 +76,7 @@ const TransformedImage = ({
                 type="button"
                 onClick={() => setCurrentVersion("version2")}
                 disabled={version2Image == null}
-                className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
+                className={`bg-primary py-1 px-3 border-2  font-medium text-white rounded-md ${
                   version2Image == null
                     ? "cursor-not-allowed opacity-40"
                     : "opacity-100"
@@ -86,7 +86,7 @@ const TransformedImage = ({
                     : "border-transparent"
                 }`}
               >
-                V2
+                img2
               </button>
             ) : null}
 
@@ -95,13 +95,17 @@ const TransformedImage = ({
                 type="button"
                 onClick={() => setIsComparisonOpen(true)}
                 disabled={version2Image == null || version1Image == null}
-                className={`bg-primary py-3 px-5 border-2  font-medium text-white rounded-md ${
+                className={`bg-primary py-1 px-3 border-2  font-medium text-white rounded-md ${
                   version1Image == null || version2Image == null
                     ? "cursor-not-allowed opacity-40"
                     : "opacity-100"
                 }`}
               >
-                Compare
+                <img
+                  src="/assets/icons/left-and-right-arrows.png"
+                  alt="Compare"
+                  className="w-6 h-6"
+                />
               </button>
             ) : null}
           </div>
